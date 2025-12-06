@@ -20,6 +20,7 @@ test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transfor
 train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
 test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
 
+
 class PatchEmbeddings(nn.Module):
     def __init__(self):
         super().__init__()
@@ -29,12 +30,16 @@ class PatchEmbeddings(nn.Module):
         self.cls = nn.Parameter(torch.randn(1, 1, embed_dim)) # 1, 1, embed_dim
 
     def forward(self, x):
+        # creates patches of size patch_dim x patch_dim
         patches = self.unfold(x) # B, C * P^2, N
         patches = patches.permute(0, 2, 1) # B, N, C * P^2
+
+        # creates patch embeddings
         patches = self.projection(patches) # B, N, embed_dim
 
         B, _, _ = patches.shape
 
+        # creates class token
         class_token = self.cls.expand(B, -1, -1) # B, 1, embed_dim
 
         patch_embeddings = torch.cat((class_token, patches), dim=1)
