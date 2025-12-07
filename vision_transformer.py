@@ -5,10 +5,10 @@ import math
 
 # hyperparameters
 batch_size = 32
-num_workers = 2
+num_workers = 2 # random
 embed_dim = 512
 patch_dim = 4
-num_heads = 6
+num_heads = 8 # random, picked from Andrej Karpathy video
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
@@ -72,13 +72,38 @@ class Head(nn.Module):
 
         return attention
     
+class MultiHeadAttention(nn.Module):
+    def __init__(self, num_heads):
+        super().__init__()
+        
+        # list of Heads of head_dim = embed_dim // num_heads
+        self.heads = nn.ModuleList()
+        for _ in range(num_heads):
+            self.heads.append(Head(embed_dim // num_heads))
+
+        # output projection
+        self.projection = nn.Linear(embed_dim, embed_dim)
+
+    def forward(self, x):
+        single_head_outs = []
+        for head in self.heads:
+            single_head_outs.append(head(x)) # B, N+1, head_dim
+
+        # concatenate output of heads
+        multi_head_out = torch.cat(single_head_outs, dim=2) # B, N+1, embed_dim
+
+        out = self.projection(multi_head_out) # B, N+1, embed_dim
+
+        return out
+
+    
 class VisionTransformer(nn.Module):
     def __init__(self):
         super().__init__()
 
         self.patch_embeddings = PatchEmbeddings()
         self.positional_encoding_table = nn.Embedding(num_patches + 1, embed_dim)
-        self.self_attention_head = Head(embed_dim)
+        self.MHA = MultiHeadAttention(num_heads)
 
     def forward(self, x):
         patches = self.patch_embeddings(x)
@@ -86,6 +111,6 @@ class VisionTransformer(nn.Module):
 
         x = patches + pos
 
-        x = self.self_attention_head(x)
+        x = self.MHA(x)
 
         return x
