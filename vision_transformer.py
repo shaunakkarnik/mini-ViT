@@ -1,12 +1,14 @@
 import torch
 import torchvision
 from torch import nn
+import math
 
 # hyperparameters
 batch_size = 32
 num_workers = 2
 embed_dim = 512
 patch_dim = 4
+num_heads = 6
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
@@ -42,9 +44,33 @@ class PatchEmbeddings(nn.Module):
         # creates class token
         class_token = self.cls.expand(B, -1, -1) # B, 1, embed_dim
 
-        patch_embeddings = torch.cat((class_token, patches), dim=1)
+        patch_embeddings = torch.cat((class_token, patches), dim=1) # B, N + 1, embed_dim
 
         return patch_embeddings
+    
+class Head(nn.Module):
+    def __init__(self, head_dim):
+        super().__init__()
+
+        self.query = nn.Linear(embed_dim, head_dim)
+        self.key = nn.Linear(embed_dim, head_dim)
+        self.value = nn.Linear(embed_dim, head_dim)
+
+    def forward(self, x):
+        q = self.query(x) # B, N+1, head_dim
+        k = self.query(x) # B, N+1, head_dim
+        v = self.query(x) # B, N+1, head_dim
+
+        _, _, d_k = q.shape
+
+        # scaled dot-product attention
+        weights = q @ k.transpose(1, 2) # B, N+1, N+1 --> affinities between patches
+        weights = weights / math.sqrt(d_k)
+        weights = torch.softmax(weights, dim=1)
+
+        attention = weights @ v # B, N+1, head_dim
+
+        return attention
     
 class VisionTransformer(nn.Module):
     def __init__(self):
@@ -52,10 +78,14 @@ class VisionTransformer(nn.Module):
 
         self.patch_embeddings = PatchEmbeddings()
         self.positional_encoding_table = nn.Embedding(num_patches + 1, embed_dim)
+        self.self_attention_head = Head(embed_dim)
 
     def forward(self, x):
         patches = self.patch_embeddings(x)
         pos = self.positional_encoding_table(torch.arange(num_patches + 1, device=device))
 
         x = patches + pos
+
+        x = self.self_attention_head(x)
+
         return x
