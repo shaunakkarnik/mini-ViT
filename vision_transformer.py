@@ -94,8 +94,7 @@ class ClassificationHead(nn.Module):
         self.mlp = nn.Sequential (
             nn.Linear(embed_dim, hidden_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim, 10),
-            nn.Softmax(dim=1)
+            nn.Linear(hidden_dim, 10)
         )
 
     def forward(self, x):
@@ -128,15 +127,15 @@ class VisionTransformer(nn.Module):
 
 # --- training ----
 
-# training hyperparameters
-batch_size = 32
-num_workers = 2 # ?
+# # training hyperparameters
+# batch_size = 32
+# num_workers = 2 # ?
 
-# load dataset and create dataloader
-train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
-test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=torchvision.transforms.ToTensor(), download=True)
+# # load dataset and create dataloader
+# train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
+# test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=torchvision.transforms.ToTensor(), download=True)
 
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
+# train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+# test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
 
 
