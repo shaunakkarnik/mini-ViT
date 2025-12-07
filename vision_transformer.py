@@ -128,14 +128,21 @@ class VisionTransformer(nn.Module):
 # --- training ----
 
 # # training hyperparameters
-# batch_size = 32
-# num_workers = 2 # ?
+batch_size = 32
+num_workers = 2 # ?
 
-# # load dataset and create dataloader
-# train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
-# test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=torchvision.transforms.ToTensor(), download=True)
+# load dataset and create dataloader
+full_train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
 
-# train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-# test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
+train_size = int(len(full_train_dataset) * 0.9)
+val_size = len(full_train_dataset) - train_size
+
+
+train_dataset, val_dataset = torch.utils.data.random_split(full_train_dataset, [train_size, val_size])
+test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True)
+
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+val_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=True, num_workers=2)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=2)
 
 
