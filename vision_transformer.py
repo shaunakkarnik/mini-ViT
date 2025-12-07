@@ -3,25 +3,16 @@ import torchvision
 from torch import nn
 import math
 
-# hyperparameters
-batch_size = 32
-num_workers = 2 # random
+# model hyperparameters
 embed_dim = 512
 patch_dim = 4
 num_heads = 8 # random, picked from Andrej Karpathy video
+classifier_hidden_dim = 1024
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
 
 device = torch.device('mps')
-
-# load dataset and create dataloader
-train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
-test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=torchvision.transforms.ToTensor(), download=True)
-
-train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
-
 
 class PatchEmbeddings(nn.Module):
     def __init__(self):
@@ -96,7 +87,21 @@ class MultiHeadAttention(nn.Module):
 
         return out
 
-    
+class ClassificationHead(nn.Module):
+    def __init__(self, hidden_dim):
+        super().__init__()
+
+        self.mlp = nn.Sequential (
+            nn.Linear(embed_dim, hidden_dim),
+            nn.GELU(),
+            nn.Linear(hidden_dim, 10),
+            nn.Softmax(dim=1)
+        )
+
+    def forward(self, x):
+        out = self.mlp(x)
+        return out
+
 class VisionTransformer(nn.Module):
     def __init__(self):
         super().__init__()
@@ -104,6 +109,7 @@ class VisionTransformer(nn.Module):
         self.patch_embeddings = PatchEmbeddings()
         self.positional_encoding_table = nn.Embedding(num_patches + 1, embed_dim)
         self.MHA = MultiHeadAttention(num_heads)
+        self.classification_head = ClassificationHead(classifier_hidden_dim)
 
     def forward(self, x):
         patches = self.patch_embeddings(x)
@@ -113,4 +119,24 @@ class VisionTransformer(nn.Module):
 
         x = self.MHA(x)
 
-        return x
+        class_token = x[:, 0, :]
+
+        out = self.classification_head(class_token)
+
+        return out
+    
+
+# --- training ----
+
+# training hyperparameters
+batch_size = 32
+num_workers = 2 # ?
+
+# load dataset and create dataloader
+train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, transform=torchvision.transforms.ToTensor(), download=True)
+test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, transform=torchvision.transforms.ToTensor(), download=True)
+
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+test_loader = torch.utils.data.DataLoader(dataset=test_dataset, batch_size=batch_size, num_workers=num_workers)
+
+
