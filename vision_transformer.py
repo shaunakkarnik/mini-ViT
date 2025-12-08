@@ -4,10 +4,9 @@ from torch import nn
 import math
 
 # model hyperparameters
-embed_dim = 512
+embed_dim = 128
 patch_dim = 4
 num_heads = 8 # random, picked from Andrej Karpathy video
-classifier_hidden_dim = 1024
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
@@ -86,15 +85,39 @@ class MultiHeadAttention(nn.Module):
         out = self.projection(multi_head_out) # B, N+1, embed_dim
 
         return out
+    
+class Block(nn.Module):
+    def __init__(self):
+        super().__init__()
+
+        self.norm = nn.LayerNorm(embed_dim)
+        self.MHA = MultiHeadAttention(num_heads)
+        self.mlp = nn.Sequential (
+            nn.Linear(embed_dim, embed_dim * 2),
+            nn.GELU(),
+            nn.Linear(embed_dim * 2, embed_dim)
+        )
+
+    def forward(self, x):
+
+        x_prime = self.norm(x)
+        x_prime = self.MHA(x_prime)
+        x_prime = x + x_prime
+
+        out = self.norm(x_prime)
+        out = self.mlp(out)
+        out = out + x_prime
+
+        return out
 
 class ClassificationHead(nn.Module):
-    def __init__(self, hidden_dim):
+    def __init__(self):
         super().__init__()
 
         self.mlp = nn.Sequential (
-            nn.Linear(embed_dim, hidden_dim),
+            nn.Linear(embed_dim, embed_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim, 10)
+            nn.Linear(embed_dim, 10)
         )
 
     def forward(self, x):
@@ -107,8 +130,12 @@ class VisionTransformer(nn.Module):
 
         self.patch_embeddings = PatchEmbeddings()
         self.positional_encoding_table = nn.Embedding(num_patches + 1, embed_dim)
-        self.MHA = MultiHeadAttention(num_heads)
-        self.classification_head = ClassificationHead(classifier_hidden_dim)
+        self.blocks = nn.Sequential(
+            Block(),
+            Block(),
+            Block()
+        )
+        self.classification_head = ClassificationHead()
 
     def forward(self, x):
         patches = self.patch_embeddings(x)
@@ -116,7 +143,7 @@ class VisionTransformer(nn.Module):
 
         x = patches + pos
 
-        x = self.MHA(x)
+        x = self.blocks(x)
 
         class_token = x[:, 0, :]
 
