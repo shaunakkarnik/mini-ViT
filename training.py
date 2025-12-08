@@ -31,22 +31,11 @@ model = VisionTransformer().to(device)
 criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.Adam(model.parameters())
 
-# evaluation func to get avg train and val loss over eval_iters number of batches
+# evaluation func to get avg val loss over eval_iters number of batches
 @torch.no_grad()
 def eval(iteration):
 
-    train_losses = torch.zeros(eval_iters)
-    for i, (batch, labels) in enumerate(train_loader):
-        if i == eval_iters:
-            break
-
-        x = batch.to(device)
-        targets = labels.to(device)
-        out = model(x)
-        loss = criterion(out, targets)
-        train_losses[i] = loss.item()
-
-    avg_train_loss = train_losses.mean(dim=0)
+    model.eval()
 
     val_losses = torch.zeros(eval_iters)
     for i, (batch, labels) in enumerate(val_loader):
@@ -61,16 +50,16 @@ def eval(iteration):
 
     avg_val_loss = val_losses.mean(dim=0)
 
-    print("Iteration " + str(iteration) + " - Train loss: " + str(avg_train_loss.item()) + ", Val loss: " + str(avg_val_loss.item()))
+    model.train()
+
+    print("Epoch " + str(iteration) + " - Val loss: " + str(avg_val_loss.item()))
 
 # main training loop
 if __name__ == "__main__":
     for i in range(train_iters):
+        train_losses_sum = 0.0
 
-        if i % eval_interval == 0:
-            eval(i)
-
-        for batch, labels in train_loader:
+        for batch_num, (batch, labels) in enumerate(train_loader):
             
             x = batch.to(device)
             targets = labels.to(device)
@@ -78,7 +67,13 @@ if __name__ == "__main__":
             out = model(x)
 
             loss = criterion(out, targets)
+            train_losses_sum += loss.item()
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+        print("Epoch " + str(i) + " - Train loss: " + str(train_losses_sum / len(train_loader)))
+
+        if i % eval_interval == 0 or i == train_iters - 1:
+            eval(i)
