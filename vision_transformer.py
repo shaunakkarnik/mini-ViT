@@ -4,9 +4,9 @@ from torch import nn
 import math
 
 # model hyperparameters
-embed_dim = 128
+embed_dim = 256
 patch_dim = 4
-num_heads = 8 # random, picked from Andrej Karpathy video
+num_heads = 4 # random, picked from Andrej Karpathy video
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
