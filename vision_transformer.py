@@ -11,7 +11,7 @@ num_heads = 4 # random, picked from Andrej Karpathy video
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
 
-device = torch.device('mps')
+device = torch.device('cuda')
 
 class PatchEmbeddings(nn.Module):
     def __init__(self):
