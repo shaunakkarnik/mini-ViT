@@ -7,6 +7,7 @@ import math
 embed_dim = 256
 patch_dim = 4
 num_heads = 4 # random, picked from Andrej Karpathy video
+dropout_rate = 0.1
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
@@ -73,6 +74,7 @@ class MultiHeadAttention(nn.Module):
 
         # output projection
         self.projection = nn.Linear(embed_dim, embed_dim)
+        self.dropout = nn.Dropout(dropout_rate)
 
     def forward(self, x):
         single_head_outs = []
@@ -83,6 +85,8 @@ class MultiHeadAttention(nn.Module):
         multi_head_out = torch.cat(single_head_outs, dim=2) # B, N+1, embed_dim
 
         out = self.projection(multi_head_out) # B, N+1, embed_dim
+
+        out = self.dropout(out)
 
         return out
     
@@ -95,7 +99,9 @@ class Block(nn.Module):
         self.mlp = nn.Sequential (
             nn.Linear(embed_dim, embed_dim * 2),
             nn.GELU(),
-            nn.Linear(embed_dim * 2, embed_dim)
+            nn.Dropout(dropout_rate),
+            nn.Linear(embed_dim * 2, embed_dim),
+            nn.Dropout(dropout_rate)
         )
 
     def forward(self, x):
@@ -117,6 +123,7 @@ class ClassificationHead(nn.Module):
         self.mlp = nn.Sequential (
             nn.Linear(embed_dim, embed_dim),
             nn.GELU(),
+            nn.Dropout(dropout_rate),
             nn.Linear(embed_dim, 10)
         )
 
@@ -135,6 +142,7 @@ class VisionTransformer(nn.Module):
             Block(),
             Block()
         )
+        self.dropout = nn.Dropout(dropout_rate)
         self.classification_head = ClassificationHead()
 
     def forward(self, x):
@@ -142,6 +150,8 @@ class VisionTransformer(nn.Module):
         pos = self.positional_encoding_table(torch.arange(num_patches + 1, device=device))
 
         x = patches + pos
+
+        x = self.dropout(x)
 
         x = self.blocks(x)
 
