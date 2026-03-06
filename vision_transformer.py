@@ -143,6 +143,12 @@ class VisionTransformer(nn.Module):
             Block(),
             Block(),
             Block(),
+            Block(),
+            Block(),
+            Block(),
+            Block(),
+            Block(),
+            Block(),
             Block()
         )
         self.dropout = nn.Dropout(dropout_rate)
