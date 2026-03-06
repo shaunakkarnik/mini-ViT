@@ -7,7 +7,7 @@ import math
 embed_dim = 256
 patch_dim = 4
 num_heads = 4 # random, picked from Andrej Karpathy video
-dropout_rate = 0.1
+dropout_rate = 0.2
 
 image_size = 32
 num_patches = (image_size // patch_dim) ** 2
@@ -138,6 +138,9 @@ class VisionTransformer(nn.Module):
         self.patch_embeddings = PatchEmbeddings()
         self.positional_encoding_table = nn.Embedding(num_patches + 1, embed_dim)
         self.blocks = nn.Sequential(
+            Block(),
+            Block(),
+            Block(),
             Block(),
             Block(),
             Block()
