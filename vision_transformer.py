@@ -94,7 +94,8 @@ class Block(nn.Module):
     def __init__(self):
         super().__init__()
 
-        self.norm = nn.LayerNorm(embed_dim)
+        self.norm1 = nn.LayerNorm(embed_dim)
+        self.norm2 = nn.LayerNorm(embed_dim)
         self.MHA = MultiHeadAttention(num_heads)
         self.mlp = nn.Sequential (
             nn.Linear(embed_dim, embed_dim * 2),
@@ -106,11 +107,11 @@ class Block(nn.Module):
 
     def forward(self, x):
 
-        x_prime = self.norm(x)
+        x_prime = self.norm1(x)
         x_prime = self.MHA(x_prime)
         x_prime = x + x_prime
 
-        out = self.norm(x_prime)
+        out = self.norm2(x_prime)
         out = self.mlp(out)
         out = out + x_prime
 
