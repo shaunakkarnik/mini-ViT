@@ -49,15 +49,15 @@ class Head(nn.Module):
 
     def forward(self, x):
         q = self.query(x) # B, N+1, head_dim
-        k = self.query(x) # B, N+1, head_dim
-        v = self.query(x) # B, N+1, head_dim
+        k = self.key(x) # B, N+1, head_dim
+        v = self.value(x) # B, N+1, head_dim
 
         _, _, d_k = q.shape
 
         # scaled dot-product attention
         weights = q @ k.transpose(1, 2) # B, N+1, N+1 --> affinities between patches
         weights = weights / math.sqrt(d_k)
-        weights = torch.softmax(weights, dim=1)
+        weights = torch.softmax(weights, dim=-1)
 
         attention = weights @ v # B, N+1, head_dim
 
