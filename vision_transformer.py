@@ -98,10 +98,10 @@ class Block(nn.Module):
         self.norm2 = nn.LayerNorm(embed_dim)
         self.MHA = MultiHeadAttention(num_heads)
         self.mlp = nn.Sequential (
-            nn.Linear(embed_dim, embed_dim * 2),
+            nn.Linear(embed_dim, embed_dim * 4),
             nn.GELU(),
             nn.Dropout(dropout_rate),
-            nn.Linear(embed_dim * 2, embed_dim),
+            nn.Linear(embed_dim * 4, embed_dim),
             nn.Dropout(dropout_rate)
         )
 
